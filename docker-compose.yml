@@ -1,0 +1,52 @@
+version: "3.8"
+name: "blazor-demo-docker"
+services:
+  db:
+    container_name: BlazorDb
+    image: mcr.microsoft.com/mssql/server    
+    env_file:
+      - ./.env
+    environment: 
+      - MSSQL_SA_PASSWORD=$MSSQL_SA_PASSWORD
+      - ACCEPT_EULA=$ACCEPT_EULA
+    ports:
+      - 1438:1433
+    volumes:
+      - /D/Docker/SqlServer/Data:/var/opt/mssql/data
+      - /D/Docker/SqlServer/log:/var/opt/mssql/log
+      - /D/Docker/SqlServer/Backup:/var/backups
+    networks:
+      network:
+        ipv4_address: 10.5.0.5
+  backend:
+    container_name: BlazorAPI
+    build : ./DemoAPI_For_Blazor-master/.
+    environment: 
+      - ./.env
+    ports: 
+      - 7275:80
+      - 34431:443
+    depends_on: 
+      - db
+    networks:
+      network:
+        ipv4_address: 10.5.0.6
+  frontend:
+    container_name: BlazorClient
+    build: ./BlazorSignalR-master/BlazorDemo/.
+    env_file:
+      - ./.env
+    ports:
+      - 8081:80
+    depends_on:
+      - backend
+    networks:
+      network:
+        ipv4_address: 10.5.0.7
+networks:
+  network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.5.0.0/16
+          gateway: 10.5.0.1
